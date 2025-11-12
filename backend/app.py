@@ -36,7 +36,7 @@ def get_symbols():
 @app.get("/ohlcv")
 def get_ohlcv(
     symbol: str = "NIFTY-I",
-    start_date: str = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d"),
+    start_date: str = (datetime.now() - timedelta(days=300)).strftime("%Y-%m-%d"),
     end_date: str = datetime.now().strftime("%Y-%m-%d"),
     timeframe: str = "1day",
 ):

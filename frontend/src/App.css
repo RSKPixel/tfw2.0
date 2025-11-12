@@ -1,9 +1,39 @@
 @import "tailwindcss";
 
-select {
-  @apply bg-zinc-900 flex-1 border-0 border-zinc-700 pe-3 text-white focus:outline-none;
+:root {
+  /* font-family: "Source Sans Pro", sans-serif; */
+  font-family: "Roboto", sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  font-weight: 400;
+
+  @apply bg-primary;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-option {
-  @apply bg-zinc-900 text-white px-2 py-1;
+/* Add to your Tailwind CSS file or global styles */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-thumb {
+  background-color: var(--color-text-secondary);
+  border-radius: 8px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-text-secondary);
+}
+
+body {
+  @apply bg-primary text-white;
+}
+
+@theme {
+  --color-primary: #0e1117;
+  --color-secondary: #262730;
+  --color-text-secondary: #ff4b4b;
+  --color-text-primary: #fafafa;
 }

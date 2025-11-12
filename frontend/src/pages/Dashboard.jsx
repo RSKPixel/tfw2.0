@@ -34,18 +34,25 @@ const Dashboard = () => {
   }, [selectedSymbol]);
 
   return (
-    <div className="flex flex-row w-full h-full flex-1">
-      <div className="flex h-full flex-col gap-4 w-1/8 shadow-lg border-r border-zinc-700">
-        <select multiple="2" onChange={handleSelection}>
+    <div className="flex flex-row gap-4 justify-center border-secondary p-8 h-full overflow-hidden">
+      {/* Left side */}
+      <div className="border w-[20%] p-4 rounded-md flex flex-col gap-4 border-secondary h-full overflow-y-auto">
+        <select
+          multiple={true}
+          onChange={handleSelection}
+          className="border px-2 py-3 h-64 focus:ring-0 focus:outline-none rounded-md bg-bg-primary border-secondary text-text-primary w-full"
+        >
           {symbols.map((symbol) => (
-            <option key={symbol} value={symbol}>
+            <option className="p-2" key={symbol} value={symbol}>
               {symbol}
             </option>
           ))}
         </select>
+        {/* Add other widgets here — all scroll within the same fixed-height box */}
       </div>
 
-      <div className="flex-1 border-zinc-700 p-2">
+      {/* Right side */}
+      <div className="w-[80%] p-1 border border-secondary rounded-md h-full overflow-y-hidden">
         <Json2Table
           jsonData={data}
           formatting={{
