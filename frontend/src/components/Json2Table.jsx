@@ -19,6 +19,11 @@ const Json2Table = ({ jsonData, formatting = {} }) => {
     if (formatting[key].type === "numeral") {
       return numeral(value).format(formatting[key].format);
     }
+    if (formatting[key].type === "boolean") {
+      if (formatting[key].format === "True") return value ? "True" : "";
+      else if (formatting[key].format === "False") return value ? "" : "False";
+      else if (formatting[key].format === "") return value ? "True" : "False";
+    }
     return value;
   };
 

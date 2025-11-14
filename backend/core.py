@@ -3,6 +3,7 @@ from urllib.parse import quote_plus
 import pandas as pd
 import numpy as np
 import talib as ta
+import rolling
 
 tf = {
     "3min": "idata_3min",
@@ -76,6 +77,27 @@ def fetch_ohlcv(
     except Exception as e:
         status = f"Error fetching data: {e}"
         print(status)
+    return df
+
+
+def fetch_ohlcv_ta(
+    symbol: str, start_date: str, end_date: str, timeframe: str
+) -> pd.DataFrame:
+
+    df = fetch_ohlcv(symbol, start_date, end_date, timeframe)
+    if df.empty:
+        return df
+
+    tops, bottoms = rolling.rw_extremes(df["close"].to_numpy(), 10)
+    df["swing_high"] = False
+    df["swing_low"] = False
+
+    for top in tops:
+        df.at[top[1], "swing_high"] = True
+    for bottom in bottoms:
+        df.at[bottom[1], "swing_low"] = True
+
+    print(df[df["swing_high"] | df["swing_low"]])
     return df
 
 

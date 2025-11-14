@@ -3,7 +3,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
-from core import fetch_symbols, fetch_ohlcv
+from core import fetch_symbols, fetch_ohlcv, fetch_ohlcv_ta
 from datetime import datetime, timedelta
 
 origins = [
@@ -36,11 +36,24 @@ def get_symbols():
 @app.get("/ohlcv")
 def get_ohlcv(
     symbol: str = "NIFTY-I",
-    start_date: str = (datetime.now() - timedelta(days=300)).strftime("%Y-%m-%d"),
+    start_date: str = (datetime.now() - timedelta(days=365)).strftime("%Y-%m-%d"),
     end_date: str = datetime.now().strftime("%Y-%m-%d"),
     timeframe: str = "1day",
 ):
     df = fetch_ohlcv(symbol, start_date, end_date, timeframe)
+    data = json.loads(df.to_json(orient="records", date_format="iso"))
+
+    return JSONResponse(content=data, status_code=200)
+
+
+@app.get("/ohlcv-ta")
+def get_ohlcv_ta(
+    symbol: str = "NIFTY-I",
+    start_date: str = (datetime.now() - timedelta(days=365)).strftime("%Y-%m-%d"),
+    end_date: str = datetime.now().strftime("%Y-%m-%d"),
+    timeframe: str = "1day",
+):
+    df = fetch_ohlcv_ta(symbol, start_date, end_date, timeframe)
     data = json.loads(df.to_json(orient="records", date_format="iso"))
 
     return JSONResponse(content=data, status_code=200)
