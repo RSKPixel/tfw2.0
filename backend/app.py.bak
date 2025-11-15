@@ -1,25 +1,3 @@
-import json
-from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse, Response
-from fastapi.middleware.cors import CORSMiddleware
-import uvicorn
-from core import fetch_symbols, fetch_ohlcv, fetch_ohlcv_ta
-from datetime import datetime, timedelta
-
-origins = [
-    "http://localhost:5173",
-]
-app = FastAPI()
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-
 @app.exception_handler(404)
 def not_found_handler(request: Request, exc):
     return Response(content="Custom 404: Resource not found", status_code=404)
@@ -59,5 +37,19 @@ def get_ohlcv_ta(
     return JSONResponse(content=data, status_code=200)
 
 
-if __name__ == "__main__":
-    uvicorn.run("app:app", host="127.0.0.1", port=8000, reload=True)
+@app.get("/eod")
+def fetch_eod(
+    symbol: str = "NIFTY-I",
+    start_date: str = (datetime.now() - timedelta(days=365)).strftime("%Y-%m-%d"),
+    end_date: str = datetime.now().strftime("%Y-%m-%d"),
+):
+    kiteapi = config.kite_connect()
+    data = eod(symbol, start_date, end_date, kiteapi)
+    return JSONResponse(content=data, status_code=200)
+
+
+@app.get("/instruments")
+def get_instruments():
+    kiteapi = config.kite_connect()
+    instruments = fetch_instruments(kiteapi)
+    return JSONResponse(content=instruments, status_code=200)
