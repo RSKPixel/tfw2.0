@@ -1,7 +1,7 @@
-import psycopg2
 from kiteconnect import KiteConnect
 import requests
-import webbrowser
+import sqlalchemy
+
 
 KITE_API_KEY = "tw96psyyds0yj8vj"
 KITE_API_SECRET = "3iewov9onkbytzramkt263r9lvcdzks9"
@@ -26,7 +26,6 @@ def kite_connect() -> KiteConnect:
         loginurl = kite.login_url()
         kite = None
         print("Login URL:", loginurl)
-        webbrowser.open(loginurl)
         return None
 
     return kite
