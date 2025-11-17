@@ -3,7 +3,8 @@ from fastapi import FastAPI, Request, APIRouter
 from fastapi.responses import JSONResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
-from routes.kite import router as kite
+from routes.data import router as data
+from routes.portfolio import router as portfolio
 
 origins = [
     "http://localhost:5173",
@@ -18,8 +19,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(kite)
+app.include_router(data)
+app.include_router(portfolio)
 
 
 if __name__ == "__main__":
-    uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)
+    uvicorn.run("manage:app", host="127.0.0.1", port=8000, reload=True)

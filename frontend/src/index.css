@@ -1,1 +1,5 @@
 @import "tailwindcss";
+
+button {
+  @apply bg-blue-600 min-w-3 w-fit text-white font-semibold py-1 px-4 rounded-lg hover:bg-blue-700 transition duration-300;
+}
