@@ -7,7 +7,9 @@ const Basetemplate = ({ children }) => {
 
   const menuItems = {
     Dashboard: "/",
-    Portfolio: "/portfolio",
+    "Portfolio (Zerodha)": "/zerodha",
+    Models: "/models",
+    Reports: "/reports",
     "Market Data": "/marketdata",
   };
   return (
@@ -31,10 +33,6 @@ const Basetemplate = ({ children }) => {
               {name}
             </Link>
           ))}
-          <span className="border-l border-secondary ps-4">
-            {String(profile?.user_shortname || "Guest").toUpperCase()} (
-            {profile?.user_id || "-"})
-          </span>
         </span>
       </header>
 

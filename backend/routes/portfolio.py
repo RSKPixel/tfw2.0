@@ -41,3 +41,12 @@ async def get_portfolio_funds():
     funds = kite.margins()
 
     return JSONResponse(content={"status": "success", "data": funds}, status_code=200)
+
+
+@router.get("/trades")
+async def get_portfolio_trades():
+    kite = kite_connect()
+
+    trades = kite.trades()
+
+    return JSONResponse(content={"status": "success", "data": trades}, status_code=200)

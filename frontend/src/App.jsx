@@ -5,29 +5,13 @@ import Dashboard from "./pages/Dashboard";
 import Basetemplate from "./templates/Basetemplate";
 import GlobalContext from "./templates/GlobalContext";
 import MarketData from "./pages/MarketData";
-import Portfolio from "./pages/portfolio/Portfolio";
+import Zerodha from "./pages/portfolio/Zerodha";
 
 function App() {
   const api = "http://localhost:8000";
   const [selectedMenuItem, setSelectedMenuItem] = useState("");
-  const [profile, setProfile] = useState({
-    user_id: "",
-    user_name: "",
-    email: "",
-    user_shortname: "",
-  });
   const [loggedIn, setLoggedIn] = useState(false);
-  const provider = { api, selectedMenuItem, setSelectedMenuItem, profile };
-
-  useEffect(() => {
-    // Fetch user profile on app load
-    fetch(`${api}/portfolio/profile`)
-      .then((response) => response.json())
-      .then((data) => {
-        setProfile(data["data"]);
-        setLoggedIn(true);
-      });
-  }, []);
+  const provider = { api, selectedMenuItem, setSelectedMenuItem };
 
   return (
     <GlobalContext.Provider value={provider}>
@@ -35,7 +19,11 @@ function App() {
         <Basetemplate>
           <Routes>
             <Route path="/" element={<Dashboard />} />
-            <Route path="/portfolio" element={<Portfolio />} />
+            <Route
+              path="/models"
+              element={<div className="mt-8"> Models </div>}
+            />
+            <Route path="/zerodha" element={<Zerodha />} />
             <Route path="/marketdata" element={<MarketData />} />
           </Routes>
         </Basetemplate>

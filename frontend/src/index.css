@@ -1,5 +1,18 @@
 @import "tailwindcss";
 
 button {
-  @apply bg-blue-600 min-w-3 w-fit text-white font-semibold py-1 px-4 rounded-lg hover:bg-blue-700 transition duration-300;
+  @apply flex flex-row gap-2 bg-blue-600 min-w-3 w-fit text-white font-semibold py-1 px-4 rounded-lg hover:bg-blue-700 transition duration-300;
+}
+
+button:disabled {
+  @apply bg-gray-500 cursor-not-allowed;
+}
+
+@keyframes progress {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
 }
