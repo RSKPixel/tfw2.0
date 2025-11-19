@@ -4,7 +4,7 @@ from fastapi.responses import JSONResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 from routes.data import router as data
-from routes.portfolio import router as portfolio
+from routes.zerodha import router as zerodha
 
 origins = [
     "http://localhost:5173",
@@ -20,7 +20,7 @@ app.add_middleware(
 )
 
 app.include_router(data)
-app.include_router(portfolio)
+app.include_router(zerodha)
 
 
 if __name__ == "__main__":
