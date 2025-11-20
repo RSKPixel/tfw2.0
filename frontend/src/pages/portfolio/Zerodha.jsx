@@ -16,7 +16,9 @@ const Zerodha = () => {
 
   useEffect(() => {
     setSelectedMenuItem("Portfolio (Zerodha)");
-    fetch(`${api}/zerodha/profile`)
+    fetch(`${api}/zerodha/profile/`, {
+      method: "POST",
+    })
       .then((response) => response.json())
       .then((data) => {
         if (data["status"] === "success") {
@@ -31,7 +33,7 @@ const Zerodha = () => {
 
   return (
     <div className="grid sm:grid-cols-1 lg:grid-cols-5 gap-8 mt-2 px-4 py-8">
-      {loading && <Loader message={loaderMessage} />}
+      {/* {loading && <Loader message={loaderMessage} />} */}
 
       <Positions
         colspan={2}
@@ -70,15 +72,34 @@ const EquityCurve = ({ colspan, profile, setLoaderMessage, setLoading }) => {
   const { api } = useContext(GlobalContext);
   const [localLoading, setLocalLoading] = useState(false);
   const period = ["1Y", "3Y", "5Y", "All"];
-  const timeframe = ["Day", "Week", "Month"];
+  const timeframe = ["Daily", "Weekly", "Montly"];
   const [selectedPeriod, setSelectedPeriod] = useState("All");
-  const [selectedTimeframe, setSelectedTimeframe] = useState("Day");
+  const [selectedTimeframe, setSelectedTimeframe] = useState("Daily");
 
   return (
     <div className={`w-full flex flex-col lg:col-span-${colspan}`}>
       <div className="flex flex-row w-full rounded-t-lg bg-text-secondary/20 border-text-secondary border px-2 py-1">
-        <span className="font-bold">Equity Curve</span>
-        <span className="ms-auto">
+        <span className="font-bold me-5">
+          Equity Curve (
+          {timeframe.map((tf, index) => (
+            <>
+              {index > 0 && <span className={`${index > 0 && "ms-2"}`}>|</span>}
+              <span
+                key={index}
+                className={`font-bold ms-2 ${
+                  index == timeframe.length - 1 && "me-2"
+                } cursor-pointer hover:underline underline-offset-4 ${
+                  selectedTimeframe === tf ? "underline" : ""
+                }`}
+                onClick={() => setSelectedTimeframe(tf)}
+              >
+                {tf}
+              </span>
+            </>
+          ))}
+          )
+        </span>
+        <span className="ms-auto flex flex-row">
           {period.map((p, index) => (
             <span
               key={index}
@@ -91,18 +112,6 @@ const EquityCurve = ({ colspan, profile, setLoaderMessage, setLoading }) => {
             </span>
           ))}
         </span>
-        <span className="font-bold me-2 cursor-pointer hover:underline">|</span>
-        {timeframe.map((tf, index) => (
-          <span
-            key={index}
-            className={`font-bold me-2 cursor-pointer hover:underline underline-offset-4 ${
-              selectedTimeframe === tf ? "underline" : ""
-            }`}
-            onClick={() => setSelectedTimeframe(tf)}
-          >
-            {tf}
-          </span>
-        ))}
       </div>
       <div className="flex flex-col w-full items-center gap-4 rounded-b-lg bg-primary border-text-secondary border-b border-s border-e px-6 py-6"></div>
     </div>

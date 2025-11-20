@@ -15,12 +15,22 @@ const MarketData = () => {
   const handleDownloadData = () => {
     setLoading(true);
     setMessage("");
-    fetch(`${api}/data/fetch-save-eod`, {
-      method: "GET",
+    fetch(`${api}/data/fetch-n-save/`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ no_of_candles: 7 }),
     })
       .then((response) => response.json())
       .then((data) => {
         setMessage(data.message);
+        setLoading(false);
+      })
+      .catch((error) => {
+        setMessage(
+          "An error occurred while fetching data. Please try again." + error
+        );
         setLoading(false);
       });
   };
