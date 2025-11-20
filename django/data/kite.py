@@ -1,7 +1,6 @@
 from kiteconnect import KiteConnect
 import pandas as pd
 import numpy as np
-
 from kiteconnect import KiteConnect
 import requests
 
@@ -17,6 +16,8 @@ def kite_connect() -> KiteConnect:
 
     request = requests.get(access_token_api_url)
     access_token = request.json().get("access_token", "")
+    status = "success"
+    message = "Access token retrieved successfully."
 
     kite = KiteConnect(api_key=api_key)
     try:
@@ -24,13 +25,14 @@ def kite_connect() -> KiteConnect:
         profile = kite.profile()
     except Exception as e:
         print("Error setting access token:", e)
+        status = "error"
+        message = "Error setting access token. " + str(e)
 
         loginurl = kite.login_url()
         kite = None
-        print("Login URL:", loginurl)
-        return None
+        return None, {"status": status, "message": message, "login_url": loginurl}
 
-    return kite
+    return kite, {"status": status, "message": message, "data": profile}
 
 
 def eod_via_kite(

@@ -6,6 +6,7 @@ import pandas as pd
 import numpy as np
 import os
 from data.kite import eod_via_kite, kite_connect
+from .models import EOD
 
 DATA_DIR = settings.DATA_DIR
 
@@ -13,15 +14,9 @@ DATA_DIR = settings.DATA_DIR
 @api_view(["GET"])
 def get_instruments(request):
     output_file = f"{DATA_DIR}/instruments.csv"
-    kite = kite_connect()
-    if not kite:
-        return Response(
-            {
-                "status": "error",
-                "message": "Kite connection could not be established.",
-                "data": [],
-            },
-        )
+    kite, kite_response = kite_connect()
+    if kite_response["status"] == "error":
+        return Response(kite_response)
 
     # Check if instruments are already saved
     try:
@@ -107,22 +102,18 @@ def get_instruments(request):
 
 
 @api_view(["GET"])
-async def get_eod_data(
-    symbol: str = "",
-    end_date: str = datetime.now().strftime("%Y-%m-%d"),
-    no_of_candles: int = 2000,
-):
-    instrument_file = f"{DATA_DIR}/instruments.csv"
-    kite = kite_connect()
+def get_eod_data(request):
+    symbol = request.GET.get("symbol", "NIFTY").upper()
+    from_date = request.GET.get(
+        "from_date", (datetime.now() - timedelta(days=2000)).strftime("%Y-%m-%d")
+    )
+    to_date = request.GET.get("to_date", datetime.now().strftime("%Y-%m-%d"))
 
-    if not kite:
-        return Response(
-            {
-                "status": "error",
-                "message": "Kite connection could not be established.",
-                "data": [],
-            },
-        )
+    instrument_file = f"{DATA_DIR}/instruments.csv"
+    kite, kite_response = kite_connect()
+
+    if kite_response["status"] == "error":
+        return Response(kite_response)
 
     if not symbol:
         return Response(
@@ -134,32 +125,94 @@ async def get_eod_data(
         )
 
     symbol = symbol.upper()
-    start_date = (
-        datetime.strptime(end_date, "%Y-%m-%d") - timedelta(days=no_of_candles)
-    ).strftime("%Y-%m-%d")
+    ohlvc_data = (
+        EOD.objects.filter(symbol=symbol, datetime__range=[from_date, to_date])
+        .order_by("datetime")
+        .values("symbol", "datetime", "open", "high", "low", "close", "volume", "oi")
+    )
+    ohlvc_data = pd.DataFrame(ohlvc_data)
+
+    return Response(
+        {
+            "status": "success",
+            "message": "EOD data fetched successfully.",
+            "data": ohlvc_data.to_dict(orient="records"),
+        },
+    )
+
+
+@api_view(["GET"])
+def fetch_n_save(request):
+    symbol = request.GET.get("symbol", "").upper()
+    end_date = request.GET.get("end_date", datetime.now().strftime("%Y-%m-%d"))
+    no_of_candles = int(request.GET.get("no_of_candles", 2000))
+    year = int(request.GET.get("year", "0"))
+
+    instrument_file = f"{DATA_DIR}/instruments.csv"
+    kite, kite_response = kite_connect()
+
+    if kite_response["status"] == "error":
+        return Response(kite_response)
+
+    symbol = symbol.upper()
+
+    if year:
+        start_date = datetime.strptime(f"{year}-01-01", "%Y-%m-%d")
+        start_date = start_date.strftime("%Y-%m-%d")
+        end_date = datetime.strptime(f"{year}-12-31", "%Y-%m-%d")
+        end_date = end_date.strftime("%Y-%m-%d")
+    else:
+        start_date = (
+            datetime.strptime(end_date, "%Y-%m-%d") - timedelta(days=no_of_candles)
+        ).strftime("%Y-%m-%d")
 
     instruments = pd.read_csv(instrument_file)
-    instruments["expiry"] = pd.to_datetime(instruments["expiry"])
-    instrument = instruments[instruments["name"] == symbol]
-    if instrument.empty:
-        return Response(
-            {
-                "status": "error",
-                "message": f"Instrument with symbol {symbol} not found.",
-                "data": [],
-            },
+    if symbol:
+        instruments = instruments[instruments["name"] == symbol]
+
+    response_data = []
+    for _, instrument in instruments.iterrows():
+        ohlvc_data = eod_via_kite(
+            instrument=instrument, start_date=start_date, end_date=end_date, kite=kite
         )
 
-    instrument = instrument.iloc[0]
+        if ohlvc_data.empty:
+            continue
 
-    df = eod_via_kite(
-        instrument=instrument, start_date=start_date, end_date=end_date, kite=kite
-    )
+        # Save to database
+        records = []
+        for _, row in ohlvc_data.iterrows():
+            record = EOD(
+                symbol=row["symbol"],
+                datetime=row["datetime"],
+                open=row["open"],
+                high=row["high"],
+                low=row["low"],
+                close=row["close"],
+                volume=row["volume"],
+                oi=row["oi"],
+            )
+            records.append(record)
+
+        EOD.objects.bulk_create(
+            records,
+            update_conflicts=True,
+            update_fields=["open", "high", "low", "close", "volume", "oi"],
+            unique_fields=["symbol", "datetime"],
+        )
+        response_data.append(
+            {
+                "symbol": instrument["tradingsymbol"],
+                "from_date": ohlvc_data["datetime"].min(),
+                "to_date": ohlvc_data["datetime"].max(),
+                "no_of_records": len(ohlvc_data),
+            }
+        )
 
     return Response(
         {
             "status": "success",
             "message": "EOD data retrieved successfully.",
-            "data": df.to_dict(orient="records"),
+            "data": response_data,
         },
     )

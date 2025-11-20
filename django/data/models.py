@@ -15,7 +15,10 @@ class EOD(models.Model):
 
     class Meta:
         db_table = "tfw_eod"
-        indexes = [
-            models.Index(fields=["symbol", "datetime"]),
+
+        constraints = [
+            models.UniqueConstraint(
+                fields=["symbol", "datetime"], name="unique_symbol_datetime_v2"
+            )
         ]
         managed = True
