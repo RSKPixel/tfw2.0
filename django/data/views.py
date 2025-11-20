@@ -141,12 +141,12 @@ def get_eod_data(request):
     )
 
 
-@api_view(["GET"])
+@api_view(["POST"])
 def fetch_n_save(request):
-    symbol = request.GET.get("symbol", "").upper()
-    end_date = request.GET.get("end_date", datetime.now().strftime("%Y-%m-%d"))
-    no_of_candles = int(request.GET.get("no_of_candles", 2000))
-    year = int(request.GET.get("year", "0"))
+    symbol = request.data.get("symbol", "").upper()
+    end_date = request.data.get("end_date", datetime.now().strftime("%Y-%m-%d"))
+    no_of_candles = int(request.data.get("no_of_candles", 2000))
+    year = int(request.data.get("year", "0"))
 
     instrument_file = f"{DATA_DIR}/instruments.csv"
     kite, kite_response = kite_connect()
@@ -212,7 +212,7 @@ def fetch_n_save(request):
     return Response(
         {
             "status": "success",
-            "message": "EOD data retrieved successfully.",
+            "message": f"EOD data from {start_date} to {end_date} fetched and saved successfully.",
             "data": response_data,
         },
     )

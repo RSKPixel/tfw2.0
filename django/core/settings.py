@@ -26,28 +26,29 @@ SECRET_KEY = "django-insecure--1d)jd4h5yoxv=wkq10ydr8uejlf5y%xdcs(ihn#xgi9!0=&0q
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["wj.trialnerror.in", "wj2.trialnerror.in", "127.0.0.1", "localhost"]
+CORS_ALLOW_METHODS = ["*"]
 
+CORS_ALLOWED_ORIGINS = ["http://localhost:5173", "https://wj.trialnerror.in"]
 
 # Application definition
-
 INSTALLED_APPS = [
-    # "django.contrib.admin",
-    # "django.contrib.messages",
     "django.contrib.auth",
     "django.contrib.sessions",
     "django.contrib.contenttypes",
     "django.contrib.staticfiles",
     "rest_framework",
+    "corsheaders",
     "data",
+    "zerodha",
 ]
 
 MIDDLEWARE = [
-    # "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.security.SecurityMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
-    "django.contrib.sessions.middleware.SessionMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
@@ -113,12 +114,11 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = "en-us"
 
-TIME_ZONE = "UTC"
-
-USE_I18N = True
-
+# TIME_ZONE = "UTC"
+TIME_ZONE = "Asia/Kolkata"
 USE_TZ = True
-
+USE_I18N = True
+USE_L10N = True
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
