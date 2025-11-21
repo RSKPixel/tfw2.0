@@ -9,7 +9,7 @@ KITE_API_SECRET = "3iewov9onkbytzramkt263r9lvcdzks9"
 ACCESS_TOKEN_API_URL = "http://kite.trialnerror.in/accesstoken/"
 
 
-def kite_connect() -> KiteConnect:
+def kite_connect() -> tuple[KiteConnect, dict]:
     api_key = KITE_API_KEY
     api_secret = KITE_API_SECRET
     access_token_api_url = ACCESS_TOKEN_API_URL

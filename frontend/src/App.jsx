@@ -8,10 +8,11 @@ import MarketData from "./pages/MarketData";
 import Zerodha from "./pages/portfolio/Zerodha";
 
 function App() {
-  const api = "http://localhost:8000";
+  const api = import.meta.env.VITE_API;
   const [selectedMenuItem, setSelectedMenuItem] = useState("");
   const [loggedIn, setLoggedIn] = useState(false);
   const provider = { api, selectedMenuItem, setSelectedMenuItem };
+  document.title = "Traders Framework v2.0";
 
   return (
     <GlobalContext.Provider value={provider}>

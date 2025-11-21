@@ -20,4 +20,5 @@ from django.urls import path, include
 urlpatterns = [
     path("data/", include("data.urls")),
     path("zerodha/", include("zerodha.urls")),
+    path("users/", include("users.urls")),
 ]

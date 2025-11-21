@@ -77,7 +77,7 @@ const EquityCurve = ({ colspan, profile, setLoaderMessage, setLoading }) => {
   const [selectedTimeframe, setSelectedTimeframe] = useState("Daily");
 
   return (
-    <div className={`w-full flex flex-col lg:col-span-${colspan}`}>
+    <div className={`w-full flex flex-col lg:col-span-3`}>
       <div className="flex flex-row w-full rounded-t-lg bg-text-secondary/20 border-text-secondary border px-2 py-1">
         <span className="font-bold me-5">
           Equity Curve (
@@ -131,7 +131,10 @@ const Positions = ({
 
   useEffect(() => {
     setLocalLoading(true);
-    fetch(`${api}/zerodha/open-positions?user_id=${profile?.user_id}`)
+    fetch(`${api}/zerodha/positions/`, {
+      method: "POST",
+      body: JSON.stringify({ user_id: profile?.user_id }),
+    })
       .then((response) => response.json())
       .then((data) => {
         setOpenPositions(data["data"]["net"]);
@@ -140,7 +143,7 @@ const Positions = ({
   }, [profile]);
 
   return (
-    <div className={`w-full flex flex-col lg:col-span-${colspan}`}>
+    <div className={`w-full flex flex-col lg:col-span-2`}>
       <div className="flex flex-row w-full rounded-t-lg bg-text-secondary/20 border-text-secondary border px-2 py-1">
         <span className="font-bold">Open Positions</span>
         <span className="font-bold ms-auto">
@@ -151,7 +154,13 @@ const Positions = ({
             : "N/A"}
         </span>
       </div>
-      <div className="flex flex-col w-full items-center gap-4 rounded-b-lg bg-primary border-text-secondary border-b border-s border-e px-6 py-6"></div>
+      <div className="flex flex-col w-full items-center gap-4 rounded-b-lg bg-primary border-text-secondary border-b border-s border-e px-6 py-6">
+        {openPositions.length === 0 && (
+          <span className=" text-text-secondary">
+            No open positions available.
+          </span>
+        )}
+      </div>
     </div>
   );
 };
@@ -193,10 +202,16 @@ const TradeBook = ({ profile, setLoaderMessage, setLoading, colspan }) => {
         setMessage(data.message);
         setLoaderMessage("");
         setLoading(false);
+      })
+      .finally((error) => {
+        setMessage("Error uploading trade book. Please try again.");
+        setLoaderMessage("");
+        setLoading(false);
+        setLocalLoading(false);
       });
   };
   return (
-    <div className={`w-full flex flex-col lg:col-span-${colspan}`}>
+    <div className={`w-full flex flex-col lg:col-span-2`}>
       <div className="flex flex-row w-full rounded-t-lg bg-text-secondary/20 border-text-secondary border px-2 py-1">
         <span className="font-bold">Trade Book</span>
         <span className="font-bold ms-auto cursor-pointer">

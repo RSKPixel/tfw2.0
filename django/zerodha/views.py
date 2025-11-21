@@ -10,11 +10,26 @@ def profile(request):
         return Response(kite_response)
 
     profile = kiteapi.profile()
-    print("Zerodha Profile:", profile)
     return Response(
         {
             "status": "success",
             "message": "Profile fetched successfully.",
             "data": profile,
+        },
+    )
+
+
+@api_view(["POST"])
+def fetch_positions(request):
+    kiteapi, kite_response = kite_connect()
+    if Response["status"] == "error":
+        return Response(kite_response)
+
+    positions = kiteapi.positions()
+    return Response(
+        {
+            "status": "success",
+            "message": "Positions fetched successfully.",
+            "data": positions,
         },
     )
