@@ -172,9 +172,22 @@ def fetch_n_save(request):
 
     response_data = []
     for _, instrument in instruments.iterrows():
-        ohlvc_data = eod_via_kite(
-            instrument=instrument, start_date=start_date, end_date=end_date, kite=kite
-        )
+        ohlvc_data = pd.DataFrame()
+        try:
+            ohlvc_data = eod_via_kite(
+                instrument=instrument,
+                start_date=start_date,
+                end_date=end_date,
+                kite=kite,
+            )
+        except Exception as e:
+            return Response(
+                {
+                    "status": "error",
+                    "message": f"Error fetching EOD data for {instrument['tradingsymbol']}: {str(e)}",
+                    "data": [],
+                },
+            )
 
         if ohlvc_data.empty:
             continue
