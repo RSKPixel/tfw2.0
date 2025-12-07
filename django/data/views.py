@@ -8,7 +8,6 @@ import os
 from data.kite_framework import eod_via_kite, kite_connect
 from .models import EOD
 from django.db import connection
-from django.db import connection
 from psycopg2.extras import execute_values
 import time
 

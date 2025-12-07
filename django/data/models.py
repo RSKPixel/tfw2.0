@@ -61,3 +61,31 @@ class IData75m(models.Model):
             )
         ]
         managed = True
+
+
+# instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick_size,lot_size,instrument_type,segment,exchange
+
+
+class Instruments(models.Model):
+    instrument_token = models.BigIntegerField(primary_key=True)
+    exchange_token = models.BigIntegerField()
+    tradingsymbol = models.CharField(max_length=50)
+    name = models.CharField(max_length=100)
+    last_price = models.FloatField()
+    expiry = models.DateField(null=True, blank=True)
+    strike = models.FloatField(null=True, blank=True)
+    tick_size = models.FloatField()
+    lot_size = models.IntegerField()
+    instrument_type = models.CharField(max_length=10)
+    segment = models.CharField(max_length=20)
+    exchange = models.CharField(max_length=10)
+
+    class Meta:
+        db_table = "tfw_instruments"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["tradingsymbol", "exchange"],
+                name="unique_tradingsymbol_exchange",
+            )
+        ]
+        managed = True
