@@ -20,7 +20,7 @@ const MarketData = () => {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ no_of_candles: 7 }),
+      body: JSON.stringify({ no_of_candles: 25 }),
     })
       .then((response) => response.json())
       .then((data) => {

@@ -66,3 +66,13 @@ def eod_via_kite(
     df.sort_values(by="datetime", inplace=True)
 
     return df
+
+
+def instruments() -> pd.DataFrame:
+    kite, kite_response = kite_connect()
+    if kite_response["status"] == "error":
+        raise Exception(kite_response["message"])
+
+    instruments = kite.instruments()
+    instruments_df = pd.DataFrame(instruments)
+    return instruments_df

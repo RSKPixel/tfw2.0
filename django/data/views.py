@@ -5,8 +5,13 @@ from datetime import datetime, timedelta
 import pandas as pd
 import numpy as np
 import os
-from data.kite import eod_via_kite, kite_connect
+from data.kite_framework import eod_via_kite, kite_connect
 from .models import EOD
+from django.db import connection
+from django.db import connection
+from psycopg2.extras import execute_values
+import time
+
 
 DATA_DIR = settings.DATA_DIR
 
@@ -171,61 +176,109 @@ def fetch_n_save(request):
         instruments = instruments[instruments["name"] == symbol]
 
     response_data = []
+    error_data = []
+    start_time = time.time()
+    api_time = 0
+    sql_time = 0
     for _, instrument in instruments.iterrows():
-        ohlvc_data = pd.DataFrame()
+        ohlcv_data = pd.DataFrame()
+        api_time_start = time.time()
         try:
-            ohlvc_data = eod_via_kite(
+            ohlcv_data = eod_via_kite(
                 instrument=instrument,
                 start_date=start_date,
                 end_date=end_date,
                 kite=kite,
             )
-        except Exception as e:
-            return Response(
-                {
-                    "status": "error",
-                    "message": f"Error fetching EOD data for {instrument['tradingsymbol']}: {str(e)}",
-                    "data": [],
-                },
-            )
 
-        if ohlvc_data.empty:
+        except Exception as e:
+            print(f"Error fetching data for {instrument['tradingsymbol']}: {e}")
+            error_data.append(
+                f"Error fetching data for {instrument['tradingsymbol']}: {e}"
+            )
+            continue
+        api_time += time.time() - api_time_start
+
+        if ohlcv_data.empty:
             continue
 
-        # Save to database
-        records = []
-        for _, row in ohlvc_data.iterrows():
-            record = EOD(
-                symbol=row["symbol"],
-                datetime=row["datetime"],
-                open=row["open"],
-                high=row["high"],
-                low=row["low"],
-                close=row["close"],
-                volume=row["volume"],
-                oi=row["oi"],
-            )
-            records.append(record)
+        sql_time_start = time.time()
+        ohlcv_data["symbol"] = instrument["tradingsymbol"]
+        ohlcv_data = ohlcv_data[
+            ["symbol", "datetime", "open", "high", "low", "close", "volume", "oi"]
+        ]
+        ohlcv_data = ohlcv_data.copy()
+        rows = ohlcv_data.to_numpy().tolist()
 
-        EOD.objects.bulk_create(
-            records,
-            update_conflicts=True,
-            update_fields=["open", "high", "low", "close", "volume", "oi"],
-            unique_fields=["symbol", "datetime"],
-        )
+        sql = """
+            INSERT INTO tfw_eod
+            (symbol, datetime, open, high, low, close, volume, oi)
+            VALUES %s
+            ON CONFLICT (symbol, datetime)
+            DO UPDATE SET
+                open   = EXCLUDED.open,
+                high   = EXCLUDED.high,
+                low    = EXCLUDED.low,
+                close  = EXCLUDED.close,
+                volume = EXCLUDED.volume,
+                oi     = EXCLUDED.oi;
+        """
+
+        with connection.cursor() as cursor:
+            execute_values(cursor, sql, rows, page_size=1000)
+
+        sql_time += time.time() - sql_time_start
+
         response_data.append(
             {
                 "symbol": instrument["tradingsymbol"],
-                "from_date": ohlvc_data["datetime"].min(),
-                "to_date": ohlvc_data["datetime"].max(),
-                "no_of_records": len(ohlvc_data),
+                "from_date": ohlcv_data["datetime"].min(),
+                "to_date": ohlcv_data["datetime"].max(),
+                "no_of_records": len(ohlcv_data),
             }
         )
 
     return Response(
         {
             "status": "success",
-            "message": f"EOD data from {start_date} to {end_date} fetched and saved successfully.",
-            "data": response_data,
+            "message": f"EOD data from {start_date} to {end_date} fetched and saved successfully. Total Time Taken: {time.time() - start_time:.2f} seconds with Error Count: {len(error_data)}.",
+            "data": [response_data, error_data],
         },
     )
+
+
+# Save to database using orm is not possible because of id field not existing in the data model
+# records = []
+# for _, row in ohlcv_data.iterrows():
+#     record = EOD(
+#         symbol=row["symbol"],
+#         datetime=row["datetime"],
+#         open=row["open"],
+#         high=row["high"],
+#         low=row["low"],
+#         close=row["close"],
+#         volume=row["volume"],
+#         oi=row["oi"],
+#     )
+#     records.append(record)
+
+# EOD.objects.bulk_create(
+#     records,
+#     update_conflicts=True,
+#     update_fields=["open", "high", "low", "close", "volume", "oi"],
+#     unique_fields=["symbol", "datetime"],
+# )
+
+# rows = [
+#     (
+#         row["symbol"],
+#         row["datetime"],
+#         row["open"],
+#         row["high"],
+#         row["low"],
+#         row["close"],
+#         row["volume"],
+#         row["oi"],
+#     )
+#     for _, row in ohlcv_data.iterrows()
+# ]
