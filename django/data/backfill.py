@@ -8,7 +8,7 @@ import psycopg2
 from psycopg2 import OperationalError, DatabaseError
 from psycopg2.extras import execute_values
 import requests
-from datetime import datetime
+from datetime import datetime, timedelta
 import os
 from time import sleep
 
@@ -212,6 +212,13 @@ def instruments(api: KiteConnect, conn: psycopg2.extensions.connection) -> pd.Da
                 "previous_expiry",
             ]
             instruments = pd.DataFrame(rows, columns=columns)
+            instruments["previous_expiry"] = pd.to_datetime(
+                np.where(
+                    instruments["previous_expiry"].isnull(),
+                    pd.to_datetime(instruments["expiry"]) - timedelta(days=30),
+                    instruments["previous_expiry"],
+                )
+            )
             return instruments
     except FileNotFoundError:
         console.print("Instruments file not found. Fetching from Kite...")
