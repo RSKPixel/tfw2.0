@@ -89,7 +89,7 @@ def backfiller():
             conn=conn,
         )
 
-        wait_until_next(waiting_minutes=1)
+        wait_until_next(waiting_minutes=15, seconds=1)
 
 
 def historicals(
