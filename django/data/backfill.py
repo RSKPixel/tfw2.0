@@ -79,13 +79,23 @@ def backfiller():
         else:
             period = 1
 
-        historicals(period=period, interval="15minute", api=api, conn=conn)
+        historicals(
+            instruments=instruments_df,
+            period=period,
+            interval="15minute",
+            api=api,
+            conn=conn,
+        )
 
         wait_until_next(waiting_minutes=1)
 
 
 def historicals(
-    period, interval, api: KiteConnect, conn: psycopg2.extensions.connection
+    instruments: pd.DataFrame,
+    period: int,
+    interval: int,
+    api: KiteConnect,
+    conn: psycopg2.extensions.connection,
 ):
     if period == 0:
         period_msg = "Previous Expiry Date + 1 to Current Date"
@@ -94,8 +104,20 @@ def historicals(
     console.print(
         f"[bold blue]Fetching historical data for, period: [bold yellow]{period_msg}[/bold yellow], interval: [bold yellow]{interval}[/bold yellow][/bold blue]\n"
     )
-    # Placeholder for historical data fetching logic
-    # This function would contain the logic to fetch and store historical data
+
+    for _, instrument in instruments.iterrows():
+        with console.status(
+            f"⏳ Fetching historical data for [bold green]{instrument['tradingsymbol']}[/bold green]..."
+        ) as status:
+            try:
+                status.update(
+                    f"✅ Fetched and stored historical data for [bold green]{instrument['tradingsymbol']}[/bold green]"
+                )
+            except Exception as e:
+                status.update(
+                    f"❌ Error fetching data for [bold red]{instrument['tradingsymbol']}[/bold red]: {e}"
+                )
+            # sleep(0.1)
     pass
 
 
@@ -138,6 +160,81 @@ def wait_until_next(waiting_minutes=1, seconds=1):
 
 
 def instruments(api: KiteConnect, conn: psycopg2.extensions.connection) -> pd.DataFrame:
+
+    def fetch_instruments() -> pd.DataFrame:
+        sql = """
+            WITH ordered AS (
+                SELECT
+                    instrument_token,
+                    exchange_token,
+                    tradingsymbol,
+                    name,
+                    expiry,
+                    lot_size,
+                    tick_size,
+                    instrument_type,
+                    segment,
+                    exchange,
+                    LAG(tradingsymbol) OVER (
+                        PARTITION BY name
+                        ORDER BY expiry
+                    ) AS prev_symbol,
+                    LAG(expiry) OVER (
+                        PARTITION BY name
+                        ORDER BY expiry
+                    ) AS prev_expiry
+                FROM tfw_instruments
+            )
+            SELECT
+                name,
+                instrument_token      AS instrument_token,
+                exchange_token        AS exchange_token,
+                tradingsymbol         AS tradingsymbol,
+                expiry                AS expiry,
+                lot_size              AS lot_size,
+                tick_size             AS tick_size,
+                instrument_type       AS instrument_type,
+                segment               AS segment,
+                exchange              AS exchange,
+                prev_symbol           AS previous_tradingsymbol,
+                prev_expiry           AS previous_expiry
+            FROM ordered o
+            WHERE expiry = (
+                SELECT MIN(expiry)
+                FROM tfw_instruments t
+                WHERE t.name = o.name
+                AND t.expiry >= CURRENT_DATE
+            )
+            ORDER BY name;
+        """
+        with conn.cursor() as cursor:
+            cursor.execute(sql)
+            rows = cursor.fetchall()
+
+        columns = [
+            "name",
+            "instrument_token",
+            "exchange_token",
+            "tradingsymbol",
+            "expiry",
+            "lot_size",
+            "tick_size",
+            "instrument_type",
+            "segment",
+            "exchange",
+            "previous_tradingsymbol",
+            "previous_expiry",
+        ]
+        instruments = pd.DataFrame(rows, columns=columns)
+        instruments["previous_expiry"] = pd.to_datetime(
+            np.where(
+                instruments["previous_expiry"].isnull(),
+                pd.to_datetime(instruments["expiry"]) - timedelta(days=30),
+                instruments["previous_expiry"],
+            )
+        )
+        return instruments
+
     output_file = f"{DATA_DIR}/instruments-backfill.csv"
 
     # Check if instruments are already saved
@@ -148,77 +245,7 @@ def instruments(api: KiteConnect, conn: psycopg2.extensions.connection) -> pd.Da
         # check_file_date
         file_date = datetime.fromtimestamp(os.path.getmtime(output_file)).date()
         if file_date == datetime.now().date():
-            sql = """
-                WITH ordered AS (
-                    SELECT
-                        instrument_token,
-                        exchange_token,
-                        tradingsymbol,
-                        name,
-                        expiry,
-                        lot_size,
-                        tick_size,
-                        instrument_type,
-                        segment,
-                        exchange,
-                        LAG(tradingsymbol) OVER (
-                            PARTITION BY name
-                            ORDER BY expiry
-                        ) AS prev_symbol,
-                        LAG(expiry) OVER (
-                            PARTITION BY name
-                            ORDER BY expiry
-                        ) AS prev_expiry
-                    FROM tfw_instruments
-                )
-                SELECT
-                    name,
-                    instrument_token      AS instrument_token,
-                    exchange_token        AS exchange_token,
-                    tradingsymbol         AS tradingsymbol,
-                    expiry                AS expiry,
-                    lot_size              AS lot_size,
-                    tick_size             AS tick_size,
-                    instrument_type       AS instrument_type,
-                    segment               AS segment,
-                    exchange              AS exchange,
-                    prev_symbol           AS previous_tradingsymbol,
-                    prev_expiry           AS previous_expiry
-                FROM ordered o
-                WHERE expiry = (
-                    SELECT MIN(expiry)
-                    FROM tfw_instruments t
-                    WHERE t.name = o.name
-                    AND t.expiry >= CURRENT_DATE
-                )
-                ORDER BY name;
-            """
-            with conn.cursor() as cursor:
-                cursor.execute(sql)
-                rows = cursor.fetchall()
-
-            columns = [
-                "name",
-                "instrument_token",
-                "exchange_token",
-                "tradingsymbol",
-                "expiry",
-                "lot_size",
-                "tick_size",
-                "instrument_type",
-                "segment",
-                "exchange",
-                "previous_tradingsymbol",
-                "previous_expiry",
-            ]
-            instruments = pd.DataFrame(rows, columns=columns)
-            instruments["previous_expiry"] = pd.to_datetime(
-                np.where(
-                    instruments["previous_expiry"].isnull(),
-                    pd.to_datetime(instruments["expiry"]) - timedelta(days=30),
-                    instruments["previous_expiry"],
-                )
-            )
+            instruments = fetch_instruments()
             return instruments
     except FileNotFoundError:
         console.print("Instruments file not found. Fetching from Kite...")
@@ -245,11 +272,6 @@ def instruments(api: KiteConnect, conn: psycopg2.extensions.connection) -> pd.Da
     ].sort_values(["expiry"])
 
     instruments_list = pd.concat([mcx, nfo]).reset_index(drop=True)
-    instruments_list = (
-        pd.concat([original_data, instruments_list])
-        .drop_duplicates()
-        .reset_index(drop=True)
-    )
     instruments_list.to_csv(output_file, index=False)
 
     instruments_list = instruments_list[
@@ -291,7 +313,8 @@ def instruments(api: KiteConnect, conn: psycopg2.extensions.connection) -> pd.Da
         with conn.cursor() as cursor:
             execute_values(cursor, sql, instruments_records)
 
-    return instruments_list
+    instruments = fetch_instruments()
+    return instruments
 
 
 if __name__ == "__main__":
