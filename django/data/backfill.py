@@ -107,7 +107,7 @@ def historicals(
         f"[bold blue]Fetching historical data for, period: [bold yellow]{period_msg}[/bold yellow], interval: [bold yellow]{interval}[/bold yellow][/bold blue]\n"
     )
 
-    SYMBOL_WIDTH = 25
+    SYMBOL_WIDTH = 50
     total = len(instruments)
     request_count = 0
     req_rate = 0
@@ -173,14 +173,14 @@ def historicals(
                     advance=1,
                     description=(
                         f"⏳ Fetching "
-                        f"[bold green]{symbol:<{SYMBOL_WIDTH}}[/bold green] @ {req_rate:.2f} req/s "
+                        f"[bold green]{symbol:<{SYMBOL_WIDTH}}[/bold green] {start_date} - {end_date} @ {req_rate:.2f} req/s "
                         f"({completed:>3}/{total})"
                     ),
                 )
             elapsed = time.time() - start_time
             req_rate = request_count / elapsed if elapsed > 0 else 0
-            if req_rate > 15:
-                sleep(0.01)
+            if req_rate > 10:
+                sleep(0.1)
         time_elapsed = time.time() - start_time
         progress.update(
             task, description=f"✅ Fetching completed in {time_elapsed:.2f} seconds!"
@@ -334,7 +334,7 @@ def instruments(api: KiteConnect, conn: psycopg2.extensions.connection) -> pd.Da
         instruments["previous_expiry"] = pd.to_datetime(
             np.where(
                 instruments["previous_expiry"].isnull(),
-                pd.to_datetime(instruments["expiry"]) - timedelta(days=30),
+                datetime(day=30, month=11, year=2025),
                 instruments["previous_expiry"],
             )
         )
