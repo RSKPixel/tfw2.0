@@ -10,7 +10,9 @@ from psycopg2.extras import execute_values
 import requests
 from datetime import datetime, timedelta
 import os
+import time
 from time import sleep
+from rich.progress import Progress, SpinnerColumn, TextColumn
 
 db_config = {
     "host": "trialnerror.in",
@@ -93,7 +95,7 @@ def backfiller():
 def historicals(
     instruments: pd.DataFrame,
     period: int,
-    interval: int,
+    interval: str,
     api: KiteConnect,
     conn: psycopg2.extensions.connection,
 ):
@@ -105,20 +107,123 @@ def historicals(
         f"[bold blue]Fetching historical data for, period: [bold yellow]{period_msg}[/bold yellow], interval: [bold yellow]{interval}[/bold yellow][/bold blue]\n"
     )
 
-    for _, instrument in instruments.iterrows():
-        with console.status(
-            f"⏳ Fetching historical data for [bold green]{instrument['tradingsymbol']}[/bold green]..."
-        ) as status:
+    SYMBOL_WIDTH = 25
+    total = len(instruments)
+    request_count = 0
+    req_rate = 0
+
+    complete_data = pd.DataFrame()
+
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+    ) as progress:
+
+        task = progress.add_task("", total=total)
+        start_time = time.time()
+        for _, instrument in instruments.iterrows():
+            symbol = instrument["tradingsymbol"]
+
             try:
-                status.update(
-                    f"✅ Fetched and stored historical data for [bold green]{instrument['tradingsymbol']}[/bold green]"
+                previous_expiry = instrument["previous_expiry"]
+                expiry = instrument["expiry"]
+                instrument_token = instrument["instrument_token"]
+
+                if period == 0:
+                    start_date = previous_expiry + timedelta(days=1)
+                else:
+                    start_date = datetime.now() - timedelta(days=period)
+
+                start_date = start_date.strftime("%Y-%m-%d")
+                end_date = datetime.now().strftime("%Y-%m-%d")
+                request_count += 1
+                idata = api.historical_data(
+                    instrument_token,
+                    start_date,
+                    end_date,
+                    interval,
+                    continuous=False,
+                    oi=False,
+                )
+                idata = pd.DataFrame(idata)
+                if idata.empty:
+                    continue
+
+                idata["symbol"] = symbol[:-8]
+                idata = idata[
+                    ["symbol", "date", "open", "high", "low", "close", "volume"]
+                ]
+                idata.rename(columns={"date": "datetime"}, inplace=True)
+                idata["datetime"] = pd.to_datetime(idata["datetime"])
+                idata = idata.replace([np.inf, -np.inf], None)
+                idata = idata.where(pd.notnull(idata), None)
+
+                save_data(
+                    data=idata,
+                    interval=f"{interval}",
+                    conn=conn,
                 )
             except Exception as e:
-                status.update(
-                    f"❌ Error fetching data for [bold red]{instrument['tradingsymbol']}[/bold red]: {e}"
+                console.print(f"[red]Error {symbol}: {e}[/red]")
+            finally:
+                completed = int(progress.tasks[task].completed) + 1
+
+                progress.update(
+                    task,
+                    advance=1,
+                    description=(
+                        f"⏳ Fetching "
+                        f"[bold green]{symbol:<{SYMBOL_WIDTH}}[/bold green] @ {req_rate:.2f} req/s "
+                        f"({completed:>3}/{total})"
+                    ),
                 )
-            # sleep(0.1)
-    pass
+            elapsed = time.time() - start_time
+            req_rate = request_count / elapsed if elapsed > 0 else 0
+            if req_rate > 15:
+                sleep(0.01)
+        time_elapsed = time.time() - start_time
+        progress.update(
+            task, description=f"✅ Fetching completed in {time_elapsed:.2f} seconds!"
+        )
+
+
+def save_data(
+    data: pd.DataFrame,
+    interval: str,
+    conn: psycopg2.extensions.connection,
+):
+
+    if interval == "15minute":
+        table_name = "tfw_idata_15m"
+    elif interval == "75minute":
+        table_name = "tfw_idata_75m"
+    else:
+        console.print(f"[red]Invalid interval: {interval}[/red]")
+        return
+
+    rows = data.to_numpy().tolist()
+    sql = f"""
+        INSERT INTO {table_name} (
+        SYMBOL,
+        DATETIME,
+        OPEN,
+        HIGH,
+        LOW,
+        CLOSE,
+        VOLUME
+        )
+        VALUES %s
+        ON CONFLICT (symbol, datetime) DO UPDATE SET
+            open   = EXCLUDED.open,
+            high   = EXCLUDED.high,
+            low    = EXCLUDED.low,
+            close  = EXCLUDED.close,
+            volume = EXCLUDED.volume;
+    """
+
+    with conn:
+        with conn.cursor() as cursor:
+            execute_values(cursor, sql, rows)
 
 
 def wait_until_next(waiting_minutes=1, seconds=1):
