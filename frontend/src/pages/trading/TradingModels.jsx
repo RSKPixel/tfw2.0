@@ -14,7 +14,9 @@ const TradingModels = ({ setModels }) => {
 
   const toggleModel = (code) => {
     setSelectedModels((prev) => {
-      const next = prev.includes(code) ? prev.filter((m) => m !== code) : [...prev, code];
+      const next = prev.includes(code)
+        ? prev.filter((m) => m !== code)
+        : [...prev, code];
 
       setModels(next);
       return next;
@@ -49,15 +51,30 @@ const TradingModels = ({ setModels }) => {
     <div className="w-full flex flex-col">
       <div className="flex w-full rounded-t-xl bg-text-secondary/20 border border-text-secondary px-4 py-1">
         <span className="font-bold">Trading Models</span>
-        <input type="checkbox" className="accent-blue-500 ml-auto" checked={allKeys.length > 0 && selectedModels.length === allKeys.length} onChange={toggleAll} />
+        <input
+          type="checkbox"
+          className="accent-blue-500 ml-auto"
+          checked={
+            allKeys.length > 0 && selectedModels.length === allKeys.length
+          }
+          onChange={toggleAll}
+        />
       </div>
 
       <div className="flex flex-col items-center w-full gap-4 rounded-b-xl border border-text-secondary px-6 py-6">
         <ul className="flex gap-4">
           {Object.entries(tradingModels).map(([code, label]) => (
-            <li key={code} className="flex items-center gap-2">
-              <input type="checkbox" className="accent-blue-500" checked={selectedModels.includes(code)} onChange={() => toggleModel(code)} />
-              <span>{label}</span>
+            <li key={code}>
+              <label className="flex items-center gap-2" htmlFor={code}>
+                <input
+                  id={code}
+                  type="checkbox"
+                  className="accent-blue-500"
+                  checked={selectedModels.includes(code)}
+                  onChange={() => toggleModel(code)}
+                />
+                {label}
+              </label>
             </li>
           ))}
         </ul>

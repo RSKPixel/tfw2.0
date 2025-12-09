@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 
 
-def signal(df: pd.DataFrame):
+def signal(df: pd.DataFrame, symbol: str = ""):
 
     df = df.copy()
     if df.iloc[-1]["swing"] not in ["high", "low"]:

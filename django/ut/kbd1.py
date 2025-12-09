@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 
 
-def signal(df: pd.DataFrame):
+def signal(df: pd.DataFrame, symbol: str = "") -> pd.DataFrame:
     # KBD1 - Key Breakout Day 1 - Trading Model
     # Author: Brent Penfold
     # When dow_cross occurs in the direction of the trend, enter a trade.
@@ -11,6 +11,7 @@ def signal(df: pd.DataFrame):
     df = df.copy()
     signal = {
         "model": "KBD1",
+        "symbol": symbol,
         "signal": None,
         "setup_candle": None,
         "entry_date": None,
@@ -66,5 +67,8 @@ def signal(df: pd.DataFrame):
             signal["setup_candle"] = df.index[-1]
             signal["entry_date"] = df.index[-1]
             signal["entry_day_sl"] = df.iloc[-1]["high"]
+
+    if signal["signal"] is None:
+        return None
 
     return pd.DataFrame([signal])
