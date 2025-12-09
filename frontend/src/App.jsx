@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import "./App.css";
-import Dashboard from "./pages/Dashboard";
 import Basetemplate from "./templates/Basetemplate";
 import GlobalContext from "./templates/GlobalContext";
 import MarketData from "./pages/MarketData";
 import Zerodha from "./pages/portfolio/Zerodha";
+import Trading from "./pages/trading/Trading";
 
 function App() {
   const api = import.meta.env.VITE_API;
@@ -19,11 +19,8 @@ function App() {
       <Router>
         <Basetemplate>
           <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route
-              path="/models"
-              element={<div className="mt-8"> Models </div>}
-            />
+            <Route path="/" element={<Trading />} />
+            <Route path="/models" element={<div className="mt-8"> Models </div>} />
             <Route path="/zerodha" element={<Zerodha />} />
             <Route path="/marketdata" element={<MarketData />} />
           </Routes>

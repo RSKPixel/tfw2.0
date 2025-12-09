@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useState } from "react";
-import GlobalContext from "../templates/GlobalContext";
+import GlobalContext from "../../templates/GlobalContext";
 
 const TradingModels = ({ setModels }) => {
   const { api } = useContext(GlobalContext);
