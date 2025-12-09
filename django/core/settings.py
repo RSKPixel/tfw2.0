@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     "data",
     "users",
     "zerodha",
+    "signals"
 ]
 
 MIDDLEWARE = [
