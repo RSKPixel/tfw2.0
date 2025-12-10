@@ -71,4 +71,4 @@ def signal(df: pd.DataFrame, symbol: str = "") -> pd.DataFrame:
     if signal["signal"] is None:
         return None
 
-    return pd.DataFrame([signal])
+    return signal

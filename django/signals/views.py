@@ -53,7 +53,6 @@ def trading_signals(request):
         table_model = IData15m
         table_name = "tfw_idata_15m"
 
-    print(table_name)
     for symbol in symbols:
         sql = f"""
             SELECT datetime AT TIME ZONE 'Asia/Kolkata' AS local_time, *
@@ -84,16 +83,26 @@ def trading_signals(request):
         df = ddt2(df)
         df.drop(columns=["asc"], inplace=True)
 
+        signals = []
         if "KBD1" in models:
-            signal = kbd1.signal(df, symbol)
-            if signal is not None:
-                print(signal)
-                signals.append(signal)
+            for d in range(1, len(df)):
+                signal = kbd1.signal(df.iloc[:d], symbol)
+                if signal is not None:
+                    signals.append(signal)
 
         if "KEBF" in models:
             signal = kebf.signal(df, symbol)
             if signal is not None:
                 signals.append(signal)
+
+        print(type(signals))
+        signals = pd.DataFrame(signals)
+        if not signals.empty:
+            signals.sort_values(by="setup_candle", ascending=False, inplace=True)
+            signals.reset_index(drop=True, inplace=True)
+            signals = signals[
+                signals["setup_candle"].dt.date == signals["setup_candle"].dt.date.max()
+            ]
     return Response(
         {
             "status": "success",
