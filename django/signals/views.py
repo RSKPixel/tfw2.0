@@ -6,6 +6,7 @@ from ut.tools import asc, weekly_rdata, ddt2, lv
 from data.models import Instruments, EOD, IData75m, IData15m
 import pandas as pd
 from django.db import connection
+from datetime import datetime
 
 
 # Create your views here.
@@ -36,6 +37,7 @@ def trading_signals(request):
     timeframe = data.get("timeframe")
 
     signals = []
+    all_signals = pd.DataFrame()
 
     symbols = (
         Instruments.objects.filter(exchange__in=markets)
@@ -95,18 +97,26 @@ def trading_signals(request):
             if signal is not None:
                 signals.append(signal)
 
-        print(type(signals))
         signals = pd.DataFrame(signals)
         if not signals.empty:
             signals.sort_values(by="setup_candle", ascending=False, inplace=True)
             signals.reset_index(drop=True, inplace=True)
-            signals = signals[
-                signals["setup_candle"].dt.date == signals["setup_candle"].dt.date.max()
-            ]
+            # signals = signals[
+            #     signals["setup_candle"].dt.date == signals["setup_candle"].dt.date.max()
+            # ]
+            all_signals = pd.concat([all_signals, signals], ignore_index=True)
+
+    all_signals = all_signals[
+        all_signals["setup_candle"].dt.date == datetime.now().date()
+    ]
     return Response(
         {
             "status": "success",
             "message": "Trading signals fetched successfully.",
-            "data": {"signals": signals},
+            "data": {
+                "signals": all_signals.sort_values(
+                    by="setup_candle", ascending=False
+                ).to_dict(orient="records")
+            },
         }
     )

@@ -3,6 +3,7 @@ import GlobalContext from "../../templates/GlobalContext";
 import TradingModels from "./TradingModels";
 import TradingSettings from "./TradingSettings";
 import Spinner from "../../components/Spinner";
+import TradingSignals from "./TradingSignals";
 
 const Trading = () => {
   const { api, setSelectedMenuItem } = useContext(GlobalContext);
@@ -60,6 +61,7 @@ const Trading = () => {
       <button disabled={loading} onClick={handleFetchSignals}>
         Fetch Signals <Spinner loading={loading} />
       </button>
+      <TradingSignals signals={signals} />
     </div>
   );
 };
