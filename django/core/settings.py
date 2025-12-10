@@ -87,8 +87,8 @@ DATABASES = {
         "NAME": "tfw",
         "USER": "sysadmin",
         "PASSWORD": "Apple@1239",
-        # "HOST": "tfw.trialnerror.in",
-        "HOST": "192.168.0.205",
+        "HOST": "tfw.trialnerror.in",
+        # "HOST": "192.168.0.205",
         "PORT": "5432",
     }
 }
