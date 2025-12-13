@@ -1,4 +1,5 @@
 import React from "react";
+import moment from "moment";
 
 const TradingSignals = ({ signals }) => {
   return (
@@ -14,11 +15,9 @@ const TradingSignals = ({ signals }) => {
           <table className="w-full table-auto">
             <thead>
               <tr className="border-b border-text-secondary/40">
-                <th className="text-left px-4 py-2">Model</th>
-                <th className="text-left px-4 py-2">Signal</th>
                 <th className="text-left px-4 py-2">Symbol</th>
                 <th className="text-left px-4 py-2">Setup Candle</th>
-                <th className="text-left px-4 py-2">Entry Price</th>
+                <th className="text-left px-4 py-2">Signal</th>
               </tr>
             </thead>
             <tbody>
@@ -31,13 +30,13 @@ const TradingSignals = ({ signals }) => {
                       : "bg-text-secondary/5"
                   }
                 >
-                  <td className="px-4 py-2">{signal.model}</td>
-                  <td className="px-4 py-2">{signal.signal}</td>
                   <td className="px-4 py-2">{signal.symbol}</td>
                   <td className="px-4 py-2">
-                    {new Date(signal.setup_candle).toLocaleString()}
+                    {new Date(signal.datetime).toLocaleString()}
                   </td>
-                  <td className="px-4 py-2">{signal.entry_price}</td>
+                  <td className="px-4 py-2">
+                    {String(signal.kbd1).toUpperCase()}
+                  </td>
                 </tr>
               ))}
             </tbody>

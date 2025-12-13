@@ -15,7 +15,7 @@ const Trading = () => {
 
   const handleFetchSignals = () => {
     setLoading(true);
-    fetch(`${api}/signals/trading-signals/`, {
+    fetch(`${api}/signals/trading-signals2/`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -34,7 +34,10 @@ const Trading = () => {
         setLoading(false);
       })
       .catch((error) => {
-        console.error("An error occurred while fetching trading signals. Please try again.", error);
+        console.error(
+          "An error occurred while fetching trading signals. Please try again.",
+          error
+        );
 
         setLoading(false);
       });
@@ -48,7 +51,12 @@ const Trading = () => {
     <div className="mt-2 px-4 py-8 flex flex-col gap-4">
       <div className=" flex flex-row gap-4">
         <TradingModels setModels={setModels} />
-        <TradingSettings selectedMarkets={selectedMarkets} selectedTimeframe={selectedTimeframe} setSelectedMarkets={setSelectedMarkets} setSelectedTimeframe={setSelectedTimeframe} />
+        <TradingSettings
+          selectedMarkets={selectedMarkets}
+          selectedTimeframe={selectedTimeframe}
+          setSelectedMarkets={setSelectedMarkets}
+          setSelectedTimeframe={setSelectedTimeframe}
+        />
       </div>
       <button disabled={loading} onClick={handleFetchSignals}>
         Fetch Signals <Spinner loading={loading} />

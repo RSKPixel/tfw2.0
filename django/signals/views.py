@@ -3,6 +3,7 @@ from rest_framework.response import Response
 from ut import kbd1, kebf, kes7, kesb
 from ut.ssc import SwingPoints2
 from ut.tools import asc, weekly_rdata, ddt2, lv, atr
+from universaltrader import ut
 from data.models import Instruments, EOD, IData75m, IData15m
 import pandas as pd
 from django.db import connection
@@ -29,6 +30,7 @@ def trading_models(request):
         }
     )
 
+
 @api_view(["POST"])
 def trading_signals2(request):
 
@@ -44,6 +46,7 @@ def trading_signals2(request):
         Instruments.objects.filter(exchange__in=markets)
         .values_list("name", flat=True)
         .distinct()
+        .order_by("name")
     )
 
     tables = {
@@ -52,7 +55,7 @@ def trading_signals2(request):
         "15m": "tfw_idata_15m",
     }
     table_name = tables.get(timeframe, "tfw_eod")
-
+    signals = pd.DataFrame()
     for symbol in symbols:
         sql = f"""
             SELECT datetime AT TIME ZONE 'Asia/Kolkata' AS local_time, *
@@ -69,12 +72,42 @@ def trading_signals2(request):
         df = pd.DataFrame(rows, columns=columns)
         df.drop(columns=["datetime"], inplace=True)
         df.rename(columns={"local_time": "date"}, inplace=True)
+        df["datetime"] = pd.to_datetime(df["date"])
+        df = df[
+            ["datetime", "date", "symbol", "open", "high", "low", "close", "volume"]
+        ]
 
         if df.empty:
             print("No data for symbol:", symbol, "\r")
             continue
 
         df.set_index("date", inplace=True)
+
+        try:
+            df = ut.signals(ohlc=df, models=models)
+
+            if len(df[df["signal"] == True]) == 0:
+                continue
+
+            all_signals = pd.concat(
+                [all_signals, df[df["signal"] == True]], ignore_index=True
+            )
+        except Exception as e:
+            print("Error processing symbol:", symbol, "Error:", e)
+            continue
+
+    all_signals.to_clipboard()
+    all_signals = all_signals.fillna("")
+
+    return Response(
+        {
+            "status": "success",
+            "message": "Trading signals fetched successfully.",
+            "data": {
+                "signals": all_signals.to_dict(orient="records"),
+            },
+        }
+    )
 
 
 @api_view(["POST"])
@@ -100,7 +133,6 @@ def trading_signals(request):
         "15m": "tfw_idata_15m",
     }
     table_name = tables.get(timeframe, "tfw_eod")
-
 
     for symbol in symbols:
         sql = f"""
