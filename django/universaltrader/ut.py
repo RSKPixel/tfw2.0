@@ -5,7 +5,6 @@ from . import kbd1
 
 def signals(ohlc: pd.DataFrame, models=["KBD1"]) -> pd.DataFrame:
 
-    df_original = ohlc.copy()
     df = ohlc.copy()
 
     df = ssc.SwingPoints2(df)
@@ -36,5 +35,5 @@ def signals(ohlc: pd.DataFrame, models=["KBD1"]) -> pd.DataFrame:
                 [signals, result[result["kbd1"].notna()]], ignore_index=True
             )
 
-    print("Signals found:", len(signals))
+    print(f"Signals found for {symbol} : ", len(signals))
     return signals

@@ -30,9 +30,6 @@ def signal(df: pd.DataFrame, symbol: str = "") -> pd.DataFrame:
             setup_bar = True
 
         if setup_bar and profit_points < 0:
-            if symbol == "ASHOKLEY":
-                print(True)
-
             df_original.at[df.index[-1], "kbd1"] = "buy"
             df_original.at[df.index[-1], "signal"] = True
 
@@ -55,8 +52,6 @@ def signal(df: pd.DataFrame, symbol: str = "") -> pd.DataFrame:
             setup_bar = True
 
         if setup_bar and profit_points < 0:
-            if symbol == "ASHOKLEY":
-                print(True)
             df_original.at[df.index[-1], "kbd1"] = "sell"
             df_original.at[df.index[-1], "signal"] = True
 
