@@ -8,6 +8,8 @@ def signal(df: pd.DataFrame, symbol: str = "") -> pd.DataFrame:
     # When dow_cross occurs in the direction of the trend, enter a trade.
     # Exit with a trailing stop of high if bullish or low if bearish of the previous three candles.
 
+    df_original = df.copy()
+    df_original["kbd1"] = None
     df = df.copy()
     signal = {
         "model": "KBD1",
@@ -37,6 +39,7 @@ def signal(df: pd.DataFrame, symbol: str = "") -> pd.DataFrame:
             setup_bar = True
 
         if setup_bar and profit_points < 0:
+            df_original["kbd1"].iloc[-1] = "buy"
             signal["signal"] = "buy"
             signal["entry_price"] = buy_price
             signal["setup_candle"] = df.index[-1]
@@ -62,6 +65,7 @@ def signal(df: pd.DataFrame, symbol: str = "") -> pd.DataFrame:
             setup_bar = True
 
         if setup_bar and profit_points < 0:
+            df_original["kbd1"].iloc[-1] = "sell"
             signal["signal"] = "sell"
             signal["entry_price"] = sell_price
             signal["setup_candle"] = df.index[-1]

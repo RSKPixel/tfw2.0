@@ -29,6 +29,53 @@ def trading_models(request):
         }
     )
 
+@api_view(["POST"])
+def trading_signals2(request):
+
+    data = request.data
+    models = data.get("models")
+    markets = data.get("markets", [])
+    timeframe = data.get("timeframe")
+
+    signals = []
+    all_signals = pd.DataFrame()
+
+    symbols = (
+        Instruments.objects.filter(exchange__in=markets)
+        .values_list("name", flat=True)
+        .distinct()
+    )
+
+    tables = {
+        "1d": "tfw_eod",
+        "75m": "tfw_idata_75m",
+        "15m": "tfw_idata_15m",
+    }
+    table_name = tables.get(timeframe, "tfw_eod")
+
+    for symbol in symbols:
+        sql = f"""
+            SELECT datetime AT TIME ZONE 'Asia/Kolkata' AS local_time, *
+            FROM {table_name}
+            WHERE symbol = %s and DATE(datetime AT TIME ZONE 'Asia/Kolkata') >= '2023-01-01'
+            ORDER BY datetime ASC;
+        """
+        with connection.cursor() as cursor:
+            cursor.execute(sql, [symbol])
+
+            rows = cursor.fetchall()
+            columns = [col[0] for col in cursor.description]
+
+        df = pd.DataFrame(rows, columns=columns)
+        df.drop(columns=["datetime"], inplace=True)
+        df.rename(columns={"local_time": "date"}, inplace=True)
+
+        if df.empty:
+            print("No data for symbol:", symbol, "\r")
+            continue
+
+        df.set_index("date", inplace=True)
+
 
 @api_view(["POST"])
 def trading_signals(request):
@@ -47,15 +94,13 @@ def trading_signals(request):
         .distinct()
     )
 
-    if timeframe == "1d":
-        table_model = EOD
-        table_name = "tfw_eod"
-    elif timeframe == "75m":
-        table_model = IData75m
-        table_name = "tfw_idata_75m"
-    elif timeframe == "15m":
-        table_model = IData15m
-        table_name = "tfw_idata_15m"
+    tables = {
+        "1d": "tfw_eod",
+        "75m": "tfw_idata_75m",
+        "15m": "tfw_idata_15m",
+    }
+    table_name = tables.get(timeframe, "tfw_eod")
+
 
     for symbol in symbols:
         sql = f"""
