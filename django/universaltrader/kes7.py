@@ -4,22 +4,15 @@ import pandas as pd
 
 def signal(df: pd.DataFrame, symbol: str = ""):
 
-    signal = {
-        "model": "KBS7",
-        "symbol": symbol,
-        "signal": None,
-        "setup_candle": None,
-        "entry_date": None,
-        "entry_price": None,
-        "entry_day_sl": None,
-    }
+    df_original = df.copy()
+    df_original["kes7"] = None
     df = df.copy()
     if df.iloc[-1]["swing"] not in ["high", "low"]:
-        return
+        return df_original
     df = df[df["swing_point"].notna()].tail(8)
 
     if len(df) < 8:
-        return
+        return df_original
 
     # Reverse so index 0 = MOST RECENT swing
     swing_points = df["swing_point"][::-1].to_list()
@@ -52,15 +45,7 @@ def signal(df: pd.DataFrame, symbol: str = ""):
     )
 
     if bf_buy or bf_sell:
-        signal = {
-            "model": "KBS7",
-            "symbol": symbol,
-            "signal": "buy" if bf_buy else "sell",
-            "setup_candle": swing_dates[0],
-            "entry_date": swing_dates[0],
-            "entry_price": swing_points[0],
-            "entry_day_sl": 0,
-        }
+        df_original.at[df_original.index[-1], "kes7"] = "buy" if bf_buy else "sell"
+        df_original.at[df_original.index[-1], "signal"] = True
 
-        return signal
-    return None
+    return df_original

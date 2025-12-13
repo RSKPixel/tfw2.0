@@ -83,18 +83,14 @@ def trading_signals2(request):
 
         df.set_index("date", inplace=True)
 
-        try:
-            df = ut.signals(ohlc=df, models=models)
+        df = ut.signals(ohlc=df, models=models)
 
-            if len(df[df["signal"] == True]) == 0:
-                continue
-
-            all_signals = pd.concat(
-                [all_signals, df[df["signal"] == True]], ignore_index=True
-            )
-        except Exception as e:
-            print("Error processing symbol:", symbol, "Error:", e)
+        if len(df[df["signal"] == True]) == 0:
             continue
+
+        all_signals = pd.concat(
+            [all_signals, df[df["signal"] == True]], ignore_index=True
+        )
 
     all_signals.to_clipboard()
     all_signals = all_signals.fillna("")

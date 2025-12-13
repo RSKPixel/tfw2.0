@@ -55,4 +55,5 @@ def signal(df: pd.DataFrame, symbol: str = "") -> pd.DataFrame:
             df_original.at[df.index[-1], "kbd1"] = "sell"
             df_original.at[df.index[-1], "signal"] = True
 
+
     return df_original
