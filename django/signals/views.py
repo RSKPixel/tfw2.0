@@ -1,8 +1,8 @@
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from ut import kbd1, kebf
+from ut import kbd1, kebf, kes7, kesb
 from ut.ssc import SwingPoints2
-from ut.tools import asc, weekly_rdata, ddt2, lv
+from ut.tools import asc, weekly_rdata, ddt2, lv, atr
 from data.models import Instruments, EOD, IData75m, IData15m
 import pandas as pd
 from django.db import connection
@@ -17,6 +17,8 @@ def trading_models(request):
     trading_models = {
         "KBD1": "Key Breakout - Dow Theory 1",
         "KEBF": "Key Exhaustion Butter Fly Pattern",
+        "KES7": "Key Exhaustion 5 Waves Down 2 Waves Up Pattern",
+        "KESB": "Key Exhaustion Swing Break",
     }
 
     return Response(
@@ -59,7 +61,7 @@ def trading_signals(request):
         sql = f"""
             SELECT datetime AT TIME ZONE 'Asia/Kolkata' AS local_time, *
             FROM {table_name}
-            WHERE symbol = %s
+            WHERE symbol = %s and DATE(datetime AT TIME ZONE 'Asia/Kolkata') >= '2023-01-01'
             ORDER BY datetime ASC;
         """
         with connection.cursor() as cursor:
@@ -78,37 +80,53 @@ def trading_signals(request):
 
         df.set_index("date", inplace=True)
         df = SwingPoints2(df)
-        df["asc"] = asc(df["close"], lookback=20)
-        df["mvf"] = (df["asc"] - df["low"]) / df["asc"] * 100
+        df["mvf"] = (
+            (asc(df["close"], lookback=20) - df["low"])
+            / asc(df["close"], lookback=20)
+            * 100
+        )
         df["ldv"] = lv(df["high"], df["low"], df["close"], lookback=4)
-        df = weekly_rdata(df)
+        df["atr"] = atr(df["high"], df["low"], df["close"], lookback=20)
+
+        if timeframe == "1d":
+            df = weekly_rdata(df)
+
         df = ddt2(df)
-        df.drop(columns=["asc"], inplace=True)
+        df = df[-200:]  # Limit to last 200 rows for performance
 
         signals = []
-        if "KBD1" in models:
-            for d in range(1, len(df)):
+        if df.empty:
+            continue
+
+        for d in range(1, len(df)):
+            if "KBD1" in models:
                 signal = kbd1.signal(df.iloc[:d], symbol)
                 if signal is not None:
                     signals.append(signal)
-
-        if "KEBF" in models:
-            signal = kebf.signal(df, symbol)
-            if signal is not None:
-                signals.append(signal)
+            if "KEBF" in models:
+                signal = kebf.signal(df.iloc[:d], symbol)
+                if signal is not None:
+                    signals.append(signal)
+            if "KES7" in models:
+                signal = kes7.signal(df.iloc[:d], symbol)
+                if signal is not None:
+                    signals.append(signal)
+            if "KESB" in models:
+                signal = kesb.signal(df.iloc[:d], symbol)
+                if signal is not None:
+                    signals.append(signal)
 
         signals = pd.DataFrame(signals)
         if not signals.empty:
             signals.sort_values(by="setup_candle", ascending=False, inplace=True)
             signals.reset_index(drop=True, inplace=True)
-            # signals = signals[
-            #     signals["setup_candle"].dt.date == signals["setup_candle"].dt.date.max()
-            # ]
             all_signals = pd.concat([all_signals, signals], ignore_index=True)
 
-    all_signals = all_signals[
-        all_signals["setup_candle"].dt.date == datetime.now().date()
-    ]
+    if timeframe != "1d":
+        all_signals = all_signals[
+            all_signals["setup_candle"].dt.date == datetime.now().date()
+        ]
+    all_signals.to_clipboard()
     return Response(
         {
             "status": "success",

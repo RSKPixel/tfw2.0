@@ -202,12 +202,17 @@ def fetch_n_save(request):
             continue
 
         sql_time_start = time.time()
-        ohlcv_data["symbol"] = instrument["tradingsymbol"]
+        ohlcv_data["symbol"] = instrument["name"]
         ohlcv_data = ohlcv_data[
             ["symbol", "datetime", "open", "high", "low", "close", "volume", "oi"]
         ]
+        # ohlcv_data["datetime"] = pd.to_datetime(
+        #     ohlcv_data["datetime"]
+        # ).dt.to_pydatetime()
+
         ohlcv_data = ohlcv_data.copy()
-        rows = ohlcv_data.to_numpy().tolist()
+        # rows = ohlcv_data.to_numpy().tolist()
+        rows = ohlcv_data.to_records(index=False).tolist()
 
         sql = """
             INSERT INTO tfw_eod

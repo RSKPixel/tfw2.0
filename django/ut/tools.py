@@ -139,6 +139,20 @@ def lv(high: pd.Series, low: pd.Series, close: pd.Series, lookback=4) -> pd.Seri
     return ldv_value
 
 
+def atr(high: pd.Series, low: pd.Series, close: pd.Series, lookback=14) -> pd.Series:
+    """Average True Range (ATR) calculation."""
+    prev_close = close.shift(1)
+
+    true_high = pd.concat([high, prev_close], axis=1).max(axis=1)
+    true_low = pd.concat([low, prev_close], axis=1).min(axis=1)
+
+    tr = true_high - true_low  # True Range
+
+    atr_value = tr.rolling(lookback).mean()  # Simple Moving Average of TR
+
+    return atr_value
+
+
 def weekly_rdata(data: pd.DataFrame) -> pd.DataFrame:
     """Resample daily OHLC data to weekly OHLC data."""
     data = data.copy()

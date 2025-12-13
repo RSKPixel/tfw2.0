@@ -62,7 +62,7 @@ const TradingModels = ({ setModels }) => {
       </div>
 
       <div className="flex flex-col items-center w-full gap-4 rounded-b-xl border border-text-secondary px-6 py-6">
-        <ul className="flex gap-4">
+        <ul className="grid grid-cols-3 gap-4">
           {Object.entries(tradingModels).map(([code, label]) => (
             <li key={code}>
               <label className="flex items-center gap-2" htmlFor={code}>
